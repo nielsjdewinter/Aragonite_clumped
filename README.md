@@ -4,7 +4,7 @@ The paper descibes clumped isotope analyses on aragonitic shells of lab-grown bi
 The repository contains R code to do the data processing and create figures as descibed in the accompanying paper on the clumped isotope composition of lab-grown aragonitic Arctica islandica shells.
 This repository contains 7 R script files and 1 raw data file.
 
-[`01_Aragonite_compilation.csv`](Aragonite_clumped/01_Aragonite_compilation.csv) is the raw data file.
+[`01_Aragonite_compilation.csv`](nielsjdewinter/Aragonite_clumped/01_Aragonite_compilation.csv) is the raw data file.
 It contains information about all clumped isotope results (D47) used in the paper.
 The file contains multiple headers which are used in the scripts to group data and calculate statistics
 
