@@ -8,17 +8,13 @@ Dependencies
 R files list dependencies required for their operations at the top.
 The following packages are used in this repository:
 
-[tidyverse 1.3.1](https://www.tidyverse.org/packages/)
+- [tidyverse 1.3.1](https://www.tidyverse.org/packages/)
 - [ggplot2 3.3.5](https://ggplot2.tidyverse.org/)
 - [ggpubr 0.4.0](https://rpkgs.datanovia.com/ggpubr/)
-
-[gridExtra 2.3](https://rdrr.io/cran/gridExtra/)
-
-[bfsl 0.2.0](https://github.com/pasturm/bfsl)
-
-[RColorBrewer 1.1.2](https://www.r-graph-gallery.com/38-rcolorbrewers-palettes.html)
-
-[ggrepel 0.9.1](https://github.com/slowkow/ggrepel)
+- [gridExtra 2.3](https://rdrr.io/cran/gridExtra/)
+- [bfsl 0.2.0](https://github.com/pasturm/bfsl)
+- [RColorBrewer 1.1.2](https://www.r-graph-gallery.com/38-rcolorbrewers-palettes.html)
+- [ggrepel 0.9.1](https://github.com/slowkow/ggrepel)
 
 [`01_Aragonite_compilation.csv`](01_Aragonite_compilation.csv) is the raw data file.
 It contains information about all clumped isotope results (D47) used in the paper.
