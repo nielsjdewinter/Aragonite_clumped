@@ -4,8 +4,10 @@ require(tidyverse) # for data treatment
 require(bfsl) # for York regressions
 
 # Load combined aragonite dataset
-dat <- as.data.frame(read.csv("<path>/Aragonite_compilation.csv", header = TRUE))
+dat <- as.data.frame(read.csv("01_Aragonite_compilation.csv", header = TRUE))
 dat$sample <- paste(dat$Temp, dat$Analysis, sep = "_")
+
+source("03_Average_error_propagation.r")
 
 # ------------------------Summarize stats per data ID---------------------------
 D47stats <- dat[-which(dat$D47_outlier == TRUE),] %>% # Summarize D47 statistics
@@ -31,7 +33,7 @@ D47stats <- dat[-which(dat$D47_outlier == TRUE),] %>% # Summarize D47 statistics
 # Summarize stats for Arctica islandica samples per specimen
 Aisstats <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] %>% # Summarize D47 statistics
     group_by(Specimen) %>%
-    summarize(        
+    summarize(
         sample = first(sample),
         Temp = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "average"),
         Temp_SD = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "SD"),
@@ -49,7 +51,7 @@ Aisstats <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ]
     ) %>%
     ungroup()
 
-# write.csv(D47stats_old, "<path>/Aragonite_dataset_naive_stats.csv")
+write.csv(D47stats_old, "out/Aragonite_dataset_naive_stats.csv")
 
 # Monte Carlo sample from individual aliquot distributions for violin plots and polynomial regression including errors on D47
 Nsim <- 10 ^ 4
@@ -71,19 +73,19 @@ violin_data$x <- 10 ^ 6 / (violin_data$Temp_sampled + 273.15) ^ 2 # Create 10^6/
 
 Aisdata <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] # Isolate Arctica islandica data from this study
 Ais_temp_aov <- aov(D47 ~ ID, data = Aisdata) # Conduct one-way ANOVA on temperature bins
-capture.output(summary(Ais_temp_aov), file = "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_temp_summary.txt") # Print summary of ANOVA
+capture.output(summary(Ais_temp_aov), file = "out/Ais_Pairwise_comp_temp_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_temp_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on temperature bins
-write.csv(TukeyHSD(Ais_temp_aov)$ID, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_temp.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_temp_aov)$ID, "out/Ais_Pairwise_comp_temp.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 Ais_spec1_aov <- aov(D47 ~ Specimen, data = Aisdata[which(Aisdata$Temp == 1.1), ]) # Conduct one-way ANOVA on Specimen bins within the 1 degree temperature treatment
-capture.output(summary(Ais_spec1_aov), file = "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_spec1_summary.txt") # Print summary of ANOVA
+capture.output(summary(Ais_spec1_aov), file = "out/Ais_Pairwise_comp_spec1_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_spec1_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on specimen bins
-write.csv(TukeyHSD(Ais_spec1_aov)$Specimen, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_spec1.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_spec1_aov)$Specimen, "out/Ais_Pairwise_comp_spec1.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 Ais_spec18_aov <- aov(D47 ~ Specimen, data = Aisdata[which(Aisdata$Temp == 18.0), ]) # Conduct one-way ANOVA on Specimen bins within the 18 degree temperature treatment
-capture.output(summary(Ais_spec18_aov), file = "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_spec18_summary.txt") # Print summary of ANOVA
+capture.output(summary(Ais_spec18_aov), file = "out/Ais_Pairwise_comp_spec18_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_spec18_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on specimen bins
-write.csv(TukeyHSD(Ais_spec18_aov)$Specimen, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_spec18.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_spec18_aov)$Specimen, "out/Ais_Pairwise_comp_spec18.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 # ----------------------------Regressions---------------------------------------
 
@@ -95,7 +97,7 @@ D47m_York <- bfsl(x = 10^6 / (dat$Temp[dat$D47_outlier == FALSE] + 273.15) ^ 2,
     r = 0)
 newdat_York <- data.frame(x = 10 ^6 / (seq(0, 1000, 0.1) + 273.15) ^ 2)
 D47m_York_pred <- predict(D47m_York, newdata = newdat_York, se.fit = TRUE, interval = "confidence", level = 0.95)
-D47m_York_result <- cbind(newdat_York, D47m_pred$fit)
+D47m_York_result <- cbind(newdat_York, D47m_York_pred$fit)
 
 D47m_lowT_York <- bfsl(x = 10^6 / (dat$Temp[dat$D47_outlier == FALSE & dat$Analysis != "Muller17"] + 273.15) ^ 2,
     y = dat$D47[dat$D47_outlier == FALSE & dat$Analysis != "Muller17"],
@@ -125,7 +127,7 @@ Mollusk_York_result <- cbind(newdat_lowT_York, Mollusk_York_pred$fit)
 
 # Third order polynomial regression following Müller et al., 2019 and Jautzy et al., 2020
 D47m_poly <- lm(D47 ~ poly(I(10^6 / (Temp + 273.15) ^ 2), 3), data = dat, subset = which(dat$D47_outlier == FALSE))
-D47m_poly_pred <- predict.lm(D47m_poly, newdata = newdat, se.fit = TRUE, interval = "confidence", level = 0.95)
+D47m_poly_pred <- predict.lm(D47m_poly, newdata = reaname(newdat_York, Temp = x), se.fit = TRUE, interval = "confidence", level = 0.95)
 D47m_poly_result <- cbind(10^6 / (newdat + 273.15) ^2, D47m_poly_pred$fit)
 
 # Polynomial regression with errors on D47 and Temp using MC simulation
