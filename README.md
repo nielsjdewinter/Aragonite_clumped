@@ -21,7 +21,7 @@ Download or git clone the directory and source/load the various R scripts.
 
 Alternatively, click the binder button below to launch an interactive RStudio session in the browser.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/japhir/Aragonite_clumped/HEAD)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/nielsjdewinter/Aragonite_clumped/HEAD)
 
 ## File overview
 - [`01_Aragonite_compilation.csv`](01_Aragonite_compilation.csv) is the raw
