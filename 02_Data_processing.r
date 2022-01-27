@@ -134,7 +134,7 @@ D47m_poly_MC_pred <- predict.lm(D47m_poly_MC, newdata = newdat_York, se.fit = TR
 D47m_poly_MC_result <- cbind(newdat_York, D47m_poly_MC_pred$fit)
 # Readjust 95% CL calculations for actual degrees of freedom
 D47m_poly_MC_result$lwr <- D47m_poly_MC_result$fit - (D47m_poly_MC_result$fit - D47m_poly_MC_result$lwr) * sqrt(D47m_poly_MC$df.residual) / sqrt(length(violin_data$D47) / Nsim - 4)
-D47m_poly_MC_result$upr <- D47m_poly_MC_result$fit + (D47m_poly_MC_result$upr - D47m_poly_MC_result$fit) * sqrt(D47m_poly_MC$df.residual) / sqrt(length(violin_data$D47) / Nsim - 4) 
+D47m_poly_MC_result$upr <- D47m_poly_MC_result$fit + (D47m_poly_MC_result$upr - D47m_poly_MC_result$fit) * sqrt(D47m_poly_MC$df.residual) / sqrt(length(violin_data$D47) / Nsim - 4)
 
 
 # -----------------------Add Preexisting calibrations---------------------------
