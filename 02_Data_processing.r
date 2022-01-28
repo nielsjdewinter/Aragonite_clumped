@@ -7,6 +7,8 @@ require(bfsl) # for York regressions
 dat <- as.data.frame(read.csv("<path>/Aragonite_compilation.csv", header = TRUE))
 dat$sample <- paste(dat$Temp, dat$Analysis, sep = "_")
 
+source("<path>/03_Average_error_propagation.r")
+
 # ------------------------Summarize stats per data ID---------------------------
 D47stats <- dat[-which(dat$D47_outlier == TRUE),] %>% # Summarize D47 statistics
     group_by(ID) %>%
@@ -71,19 +73,19 @@ violin_data$x <- 10 ^ 6 / (violin_data$Temp_sampled + 273.15) ^ 2 # Create 10^6/
 
 Aisdata <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] # Isolate Arctica islandica data from this study
 Ais_temp_aov <- aov(D47 ~ ID, data = Aisdata) # Conduct one-way ANOVA on temperature bins
-capture.output(summary(Ais_temp_aov), file = "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_temp_summary.txt") # Print summary of ANOVA
+capture.output(summary(Ais_temp_aov), file = "out/is_Pairwise_comp_temp_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_temp_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on temperature bins
-write.csv(TukeyHSD(Ais_temp_aov)$ID, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_temp.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_temp_aov)$ID, "out/is_Pairwise_comp_temp.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 Ais_spec1_aov <- aov(D47 ~ Specimen, data = Aisdata[which(Aisdata$Temp == 1.1), ]) # Conduct one-way ANOVA on Specimen bins within the 1 degree temperature treatment
-capture.output(summary(Ais_spec1_aov), file = "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_spec1_summary.txt") # Print summary of ANOVA
+capture.output(summary(Ais_spec1_aov), file = "out/is_Pairwise_comp_spec1_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_spec1_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on specimen bins
-write.csv(TukeyHSD(Ais_spec1_aov)$Specimen, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_spec1.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_spec1_aov)$Specimen, "out/is_Pairwise_comp_spec1.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 Ais_spec18_aov <- aov(D47 ~ Specimen, data = Aisdata[which(Aisdata$Temp == 18.0), ]) # Conduct one-way ANOVA on Specimen bins within the 18 degree temperature treatment
-capture.output(summary(Ais_spec18_aov), file = "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_spec18_summary.txt") # Print summary of ANOVA
+capture.output(summary(Ais_spec18_aov), file = "out/is_Pairwise_comp_spec18_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_spec18_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on specimen bins
-write.csv(TukeyHSD(Ais_spec18_aov)$Specimen, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_Pairwise_comp_spec18.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_spec18_aov)$Specimen, "out/is_Pairwise_comp_spec18.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 # ----------------------------Regressions---------------------------------------
 
@@ -95,7 +97,7 @@ D47m_York <- bfsl(x = 10^6 / (dat$Temp[dat$D47_outlier == FALSE] + 273.15) ^ 2,
     r = 0)
 newdat_York <- data.frame(x = 10 ^6 / (seq(0, 1000, 0.1) + 273.15) ^ 2)
 D47m_York_pred <- predict(D47m_York, newdata = newdat_York, se.fit = TRUE, interval = "confidence", level = 0.95)
-D47m_York_result <- cbind(newdat_York, D47m_pred$fit)
+D47m_York_result <- cbind(newdat_York, D47m_York_pred$fit)
 
 D47m_lowT_York <- bfsl(x = 10^6 / (dat$Temp[dat$D47_outlier == FALSE & dat$Analysis != "Muller17"] + 273.15) ^ 2,
     y = dat$D47[dat$D47_outlier == FALSE & dat$Analysis != "Muller17"],
@@ -104,7 +106,7 @@ D47m_lowT_York <- bfsl(x = 10^6 / (dat$Temp[dat$D47_outlier == FALSE & dat$Analy
     r = 0)
 newdat_lowT_York <- data.frame(x = 10 ^6 / (seq(0, 100, 0.1) + 273.15) ^ 2)
 D47m_lowT_York_pred <- predict(D47m_lowT_York, newdata = newdat_lowT_York, se.fit = TRUE, interval = "confidence", level = 0.95)
-D47m_lowT_York_result <- cbind(newdat_lowT_York, D47m_lowT_pred$fit)
+D47m_lowT_York_result <- cbind(newdat_lowT_York, D47m_lowT_York_pred$fit)
 
 # Calculate linear York regression on A. islandica and all bivalve data
 Ais_York <- bfsl(x = 10^6 / (dat$Temp[dat$D47_outlier == FALSE & (dat$Analysis == "this study" | dat$ID == "A.islandica")] + 273.15) ^ 2,
@@ -124,6 +126,7 @@ Mollusk_York_pred <- predict(Mollusk_York, newdata = newdat_lowT_York, se.fit = 
 Mollusk_York_result <- cbind(newdat_lowT_York, Mollusk_York_pred$fit)
 
 # Third order polynomial regression following Müller et al., 2019 and Jautzy et al., 2020
+newdat <- data.frame(Temp = seq(0, 1000, 0.1))
 D47m_poly <- lm(D47 ~ poly(I(10^6 / (Temp + 273.15) ^ 2), 3), data = dat, subset = which(dat$D47_outlier == FALSE))
 D47m_poly_pred <- predict.lm(D47m_poly, newdata = newdat, se.fit = TRUE, interval = "confidence", level = 0.95)
 D47m_poly_result <- cbind(10^6 / (newdat + 273.15) ^2, D47m_poly_pred$fit)
@@ -152,19 +155,18 @@ Guo09 <- data.frame(Temp = 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2,
     D47_ar = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893)
 
 # Arctica islandica plot (Figure 1)
-# See A_islandica_plot.r
+source("05_A_islandica_plot.r")
 
 # Full aragonite dataset plot (Figure 2)
-# See Full_aragonite_plot.r
-
+source("06_Full_aragonite_plot.r")
 
 # Summarize regression stats
-regstats <- data.frame(regression = c("All data lm", "low T lm", "All data York", "low T York", "A. islandica York", "Mollusk York"),
-    slope = c(D47m$coefficients[[2]], D47m_lowT$coefficients[[2]], D47m_York$coefficients[[2]], D47m_lowT_York$coefficients[[2]], Ais_York$coefficients[[2]], Mollusk_York$coefficients[[2]]),
-    slope_SE = c(summary(D47m)$coeff[[4]], summary(D47m_lowT)$coeff[[4]], D47m_York$coefficients[[4]], D47m_lowT_York$coefficients[[4]], Ais_York$coefficients[[4]], Mollusk_York$coefficients[[4]]),
-    intercept = c(D47m$coefficients[[1]], D47m_lowT$coefficients[[1]], D47m_York$coefficients[[1]], D47m_lowT_York$coefficients[[1]], Ais_York$coefficients[[1]], Mollusk_York$coefficients[[1]]),
-    intercept_SE = c(summary(D47m)$coeff[[3]], summary(D47m_lowT)$coeff[[3]], D47m_York$coefficients[[3]], D47m_lowT_York$coefficients[[3]], Ais_York$coefficients[[3]], Mollusk_York$coefficients[[3]]),
-    SER = c(sigma(D47m), sigma(D47m_lowT), sqrt(sum(D47m_York$residuals ^ 2) / D47m_York$df.residual), sqrt(sum(D47m_lowT_York$residuals ^ 2) / D47m_lowT_York$df.residual), sqrt(sum(Ais_York$residuals ^ 2) / Ais_York$df.residual), sqrt(sum(Mollusk_York$residuals ^ 2) / Mollusk_York$df.residual))
+regstats <- data.frame(regression = c("All data York", "low T York", "A. islandica York", "Mollusk York"),
+    slope = c(D47m_York$coefficients[[2]], D47m_lowT_York$coefficients[[2]], Ais_York$coefficients[[2]], Mollusk_York$coefficients[[2]]),
+    slope_SE = c(D47m_York$coefficients[[4]], D47m_lowT_York$coefficients[[4]], Ais_York$coefficients[[4]], Mollusk_York$coefficients[[4]]),
+    intercept = c(D47m_York$coefficients[[1]], D47m_lowT_York$coefficients[[1]], Ais_York$coefficients[[1]], Mollusk_York$coefficients[[1]]),
+    intercept_SE = c(D47m_York$coefficients[[3]], D47m_lowT_York$coefficients[[3]], Ais_York$coefficients[[3]], Mollusk_York$coefficients[[3]]),
+    SER = c(sqrt(sum(D47m_York$residuals ^ 2) / D47m_York$df.residual), sqrt(sum(D47m_lowT_York$residuals ^ 2) / D47m_lowT_York$df.residual), sqrt(sum(Ais_York$residuals ^ 2) / Ais_York$df.residual), sqrt(sum(Mollusk_York$residuals ^ 2) / Mollusk_York$df.residual))
 )
 
 regstats_poly <- data.frame(regression = c("Polynomial fit_means", "Polynomial fit_MC"),
@@ -231,7 +233,7 @@ D47m_poly_MC_result_res$Meinicke <- MeinickeICDES$D47 - D47m_poly_MC_result$fit
 # write.csv(D47stats, "<path>/Aragonite_dataset_propagated_stats.csv")
 
 # Plot of residuals with respect to regressions (Figure 3)
-# See Aragonite_residual_plot.r
+source("07_Aragonite_residual_plot.r")
 
 # Prepare summary of calibration offsets
 calibration_offset <- data.frame(D47_offset = c(dat$D47res_Anderson[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))], dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))]),
@@ -263,4 +265,4 @@ Calibration_offset_stats$Temp_offset_CL95 <- sqrt(0.0391 * 10 ^ 6 / (mean_D47 - 
 # write.csv(Calibration_offset_stats, "<path>/Calibration_offset_stats.csv")
 
 # Plot calibration offsets (Figure 4)
-# See Calibration_offset_plot.r
+source("08_Calibration_offset_plot.r")
