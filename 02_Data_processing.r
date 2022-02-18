@@ -4,54 +4,111 @@ require(tidyverse) # for data treatment
 require(bfsl) # for York regressions
 
 # Load combined aragonite dataset
-dat <- as.data.frame(read.csv("<path>/Aragonite_compilation.csv", header = TRUE))
+dat <- as.data.frame(read.csv("<path>/01_Aragonite_compilation.csv", header = TRUE))
 dat$sample <- paste(dat$Temp, dat$Analysis, sep = "_")
 
 source("<path>/03_Average_error_propagation.r")
 
 # ------------------------Summarize stats per data ID---------------------------
-D47stats <- dat[-which(dat$D47_outlier == TRUE),] %>% # Summarize D47 statistics
+
+# First propagate uncertainties on bins per temperature, keeping data from different machines separate
+D47stats_Machinebin <- dat[which(dat$D47_outlier != TRUE),] %>% # Summarize D47 statistics
+    group_by(ID, Machine) %>%
+    summarize(
+        Temp = mean(Temp, na.rm = TRUE),
+        Temp_SD = first(Temp_SD),
+        Analysis = first(Analysis),
+        type = first(type),
+        sample = first(sample),
+        D47_binmean = mean(D47, na.rm = TRUE),  # Calculate means per sample
+        SD_bin = sd(D47, na.rm = TRUE), # Calculate stdevs per sample bin
+        SD_ext = first(D47_SD), # External standard deviation (reported or based on check STD)
+        binsd = if(is.na(SD_bin)){first(SD_ext)}else{max(SD_bin, SD_ext)}, # Find largest standard deviation
+        Nbin = n(), # Calculate the number of modelled values, excluding NA's
+        binse = binsd / sqrt(Nbin), # Calculate the standard error
+        binCL95 = qt(0.95, Nbin) * binse, # Calculate the 95% confidence level
+        param49_binmean = mean(param49, na.rm = TRUE), # Propagate param49 mean per sample
+        param49_binsd = sd(param49, na.rm = TRUE), # Propagate param49 SD per sample
+        Machine = first(Machine)
+    ) %>%
+    ungroup()
+
+# write.csv(D47stats_Machinebin, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Aragonite_dataset_stats_by_Machine.csv")
+
+# Now combine sample groups from different machines into one bin
+D47stats <- D47stats_Machinebin %>%
     group_by(ID) %>%
     summarize(
-        Temp = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "average"),
-        Temp_SD = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "SD"),
+        Temp = mean(Temp, na.rm = TRUE),
+        Temp_SD = first(Temp_SD),
         Analysis = first(Analysis),
         type = first(type),
         sample = first(sample),
-        D47_mean = propagate_MC(x = D47, x_sd = D47_SD, na.rm = TRUE, output = "average"),  # Calculate means per sample
-        sd = propagate_MC(x = D47, x_sd = D47_SD, na.rm = TRUE, output = "SD"),  # Calculate stdevs per sample
-        N = n(), # Calculate the number of modelled values, excluding NA's
+        D47_mean = binmeans(x = D47_binmean, x_sd = binsd, n = Nbin, output = "mean"),  # Calculate means per sample
+        sd = binmeans(x = D47_binmean, x_sd = binsd, n = Nbin, output = "SD"), # Calculate stdevs per sample bin
+        N = sum(Nbin, na.rm = TRUE), # Calculate the number of modelled values, excluding NA's
         se = sd / sqrt(N), # Calculate the standard error
         CL95 = qt(0.95, N) * se, # Calculate the 95% confidence level
-        param49_mean = propagate_MC(x = param49, x_sd = param49_sd, na.rm = TRUE, output = "average"), # Propagate param49 mean per sample
-        param49_sd = propagate_MC(x = param49, x_sd = param49_sd, na.rm = TRUE, output = "SD"), # Propagate param49 SD per sample
+        param49_mean = binmeans(x = param49_binmean, x_sd = param49_binsd, n = Nbin, output = "mean"),  # Calculate means per sample
+        param49_sd = binmeans(x = param49_binmean, x_sd = param49_binsd, n = Nbin, output = "SD"), # Calculate stdevs per sample bin
         param49_se = param49_sd / sqrt(N),
         param49_CL95 = qt(0.95, N) * param49_se
-    ) %>%
-    ungroup()
+    )
+
+# write.csv(D47stats, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Aragonite_dataset_stats_grouped.csv")
 
 # Summarize stats for Arctica islandica samples per specimen
-Aisstats <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] %>% # Summarize D47 statistics
-    group_by(Specimen) %>%
+
+# First propagate uncertainties on bins per specimen, keeping data from different machines separate
+Aisstats_Machinebin <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] %>% # Summarize D47 statistics
+    group_by(Specimen, Machine) %>%
     summarize(        
         sample = first(sample),
-        Temp = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "average"),
-        Temp_SD = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "SD"),
+        Temp = mean(Temp, na.rm = TRUE),
+        Temp_SD = first(Temp_SD),
         Analysis = first(Analysis),
         type = first(type),
-        D47_mean = propagate_MC(x = D47, x_sd = D47_SD, na.rm = TRUE, output = "average"),  # Calculate means per sample
-        sd = propagate_MC(x = D47, x_sd = D47_SD, na.rm = TRUE, output = "SD"),  # Calculate stdevs per sample
-        N = n(), # Calculate the number of modelled values, excluding NA's
-        se = sd / sqrt(N), # Calculate the standard error
-        CL95 = qt(0.95, N) * se, # Calculate the 95% confidence level
-        param49_mean = propagate_MC(x = param49, x_sd = param49_sd, na.rm = TRUE, output = "average"), # Propagate param49 mean per sample
-        param49_sd = propagate_MC(x = param49, x_sd = param49_sd, na.rm = TRUE, output = "SD"), # Propagate param49 SD per sample
-        param49_se = param49_sd / sqrt(N),
-        param49_CL95 = qt(0.95, N) * param49_se
+        sample = first(sample),
+        D47_binmean = mean(D47, na.rm = TRUE),  # Calculate means per sample
+        SD_bin = sd(D47, na.rm = TRUE), # Calculate stdevs per sample bin
+        SD_ext = first(D47_SD), # External standard deviation (reported or based on check STD)
+        binsd = max(SD_bin, SD_ext), # Find largest standard
+        Nbin = n(), # Calculate the number of modelled values, excluding NA's
+        binse = binsd / sqrt(Nbin), # Calculate the standard error
+        binCL95 = qt(0.95, Nbin) * binse, # Calculate the 95% confidence level
+        param49_binmean = mean(param49, na.rm = TRUE), # Propagate param49 mean per sample
+        param49_binsd = sd(param49, na.rm = TRUE), # Propagate param49 SD per sample
+        Machine = first(Machine)
     ) %>%
     ungroup()
 
-# write.csv(D47stats_old, "<path>/Aragonite_dataset_naive_stats.csv")
+# write.csv(Aisstats_Machinebin, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_dataset_stats_by_Machine.csv")
+
+# Now combine sample groups from different machines into one bin
+Aisstats <- Aisstats_Machinebin %>%
+    group_by(Specimen) %>%
+    summarize(
+        Temp = mean(Temp, na.rm = TRUE),
+        Temp_SD = first(Temp_SD),
+        Analysis = first(Analysis),
+        type = first(type),
+        sample = first(sample),
+        D47_mean = binmeans(x = D47_binmean, x_sd = binsd, n = Nbin, output = "mean"),  # Calculate means per sample
+        sd = binmeans(x = D47_binmean, x_sd = binsd, n = Nbin, output = "SD"), # Calculate stdevs per sample bin
+        N = sum(Nbin, na.rm = TRUE), # Calculate the number of modelled values, excluding NA's
+        se = sd / sqrt(N), # Calculate the standard error
+        CL95 = qt(0.95, N) * se, # Calculate the 95% confidence level
+        param49_mean = binmeans(x = param49_binmean, x_sd = param49_binsd, n = Nbin, output = "mean"),  # Calculate means per sample
+        param49_sd = binmeans(x = param49_binmean, x_sd = param49_binsd, n = Nbin, output = "SD"), # Calculate stdevs per sample bin
+        param49_se = param49_sd / sqrt(N),
+        param49_CL95 = qt(0.95, N) * param49_se
+    )
+
+# write.csv(Aisstats, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_dataset_stats_grouped.csv")
+
+# Update dat with new propagated SDs for regressions
+newSDs <- D47stats[which(D47stats$Analysis == "this study"), which(colnames(D47stats) %in% c("ID", "sd"))]
+dat$D47_SD[which(!is.na(match(dat$ID, newSDs$ID)))] <- newSDs$sd[match(dat$ID, newSDs$ID)[which(!is.na(match(dat$ID, newSDs$ID)))]]
 
 # Monte Carlo sample from individual aliquot distributions for violin plots and polynomial regression including errors on D47
 Nsim <- 10 ^ 4
@@ -250,8 +307,8 @@ Calibration_offset_stats <- calibration_offset %>% # Summarize D47 offset statis
     group_by(Calibration) %>%
     summarize(
         N = n(), # Calculate the number of modelled values, excluding NA's
-        D47_offset_Average = propagate_MC(x = D47_offset, x_sd = D47_SD, na.rm = TRUE, output = "average"),
-        D47_offset_SD = propagate_MC(x = D47_offset, x_sd = D47_SD, na.rm = TRUE, output = "SD"),
+        D47_offset_Average = binmeans(x = D47_offset, x_sd = D47_SD, output = "mean"),
+        D47_offset_SD = binmeans(x = D47_offset, x_sd = D47_SD, output = "SD"),
         D47_offset_SE = D47_offset_SD / sqrt(N - 1), # Calculate the standard error
         D47_offset_CL95 = qt(0.95, N - 1) * D47_offset_SE # Calculate the 95% confidence level
     ) %>%
