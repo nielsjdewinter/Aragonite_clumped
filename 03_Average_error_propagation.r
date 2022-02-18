@@ -1,71 +1,34 @@
-# Function to propagate errors on individual aliquots through the D47 averages
-# Based on: "Combining Multiple Averaged Data Points And Their Errors" by Ken Tatebe
-# Iterative approach adding datapoints and propagating uncertainty
+# Function to combine binned data based on the mean and standard deviation of the bins and their sample sizes.
+# Based on: "Combining Multiple binmeand Data Points And Their Errors" by Ken Tatebe (http://docplayer.net/33088897-Combining-multiple-binmeand-data-points-and-their-errors.html)
+# And: "Data Analyis Toolkit #12" by James Kirchner (http://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf)
+# Approach for combining more than two bins while weighting uncertainty and means by sample size and variance within the bin
+# Worked out by Barbara Goudsmit (see SI document)
 
-average_p <- function(x, x_sd, n = NA, verbose = FALSE, output = "SD"){
+binmeans <- function(x, x_sd = NA, n = NA, verbose = FALSE, output = "All"){
     if(is.na(n)){
-        n = rep(1, length(x))
+        n = rep(1, length(x)) # If no N are given, the bins are assumed to have equal sample sizes
     }
-    N <- n[1] + n[2] # Calculate sample size for first 2 samples
-    average <- (x[1] * n[1] + x[2] * n[2]) / N # Calculate weighted average for first 2 samples
-    sd_p <- sqrt(n[1]) # Calculate weighted standard deviation for first 2 samples
-    for(i in 3:length(x)){ # Loop over x and their uncertainties x_sd
-        sd_p <- sqrt(
-            (N ^ 2 - N) / ((N + n[i]) ^ 2 - (N + n[i])) * sd_p ^ 2 + # Existing error term
-            (n[i] ^ 2 - n[i]) / ((N + n[i]) ^ 2 - (N + n[i])) * x_sd[i] ^ 2 + # Error term of new datapoint
-            N * n[i] * (average - x[i]) ^ 2 / ((N + n[i]) * ((N + n[i]) ^ 2 - (N + n[i]))) # Term resulting from distance between points
-        )
-        average <- (average * N + x[i] * n[i]) / (N + n[i]) # Increment total average
-        N <- N + n[i] # Increment total sample size
+    if(is.na(x_sd)){
+        x_sd = rep(1, length(x)) # If no SDs of the bins are given, the bins are assumed to have equal variance
     }
-    resultvec <- c(average, sd_p, N)
-    names(resultvec) <- c("average", "sd", "N")
+    if(length(n) == 1){
+        N = n[1] # In case only one entry is provided, the mean and SD of the one entry are returned as the mean and SD of the result
+        binmean = x[1]
+        SD_bin = x_sd[1]
+    }else{
+        N <- sum(n) # Calculate total sample size
+        binmean <- sum(x * n * x_sd ^ -2) / sum(n * x_sd ^ -2)  # Calculate weighted binmean (equation 16 in SI document)
+        SD_bin <- sqrt(sum(n) / (sum(n) - 1) * sum((n - 1) + x_sd ^ -2 * n * (x - binmean) ^ 2) / sum(n * x_sd ^ -2)) # Calculate weighted standard deviation (equation 17 in SI document)
+    }
+    resultvec <- c(binmean, SD_bin, N)
+    names(resultvec) <- c("binmean", "sd", "N")
     if(output == "SD"){
         return(resultvec[2])
-    } else if(output == "All"){
-        return(resultvec)
-    } else{
-        return("Error: output string not recognized")
-    }
-}
-
-# Repeat calculations based on Monte Carlo simulations
-
-propagate_MC <- function(x, x_sd, n = NA, Nsim = 10 ^ 4, verbose = FALSE, na.rm = TRUE, output = "SD"){ # Monte Carlo approach to estimate same errors
-    if(is.na(n)){
-        n = rep(1, length(x))
-    }
-
-    sims <- rep(NA, sum(Nsim * n)) # Vector to store simulated values
-    for(i in 1:length(x)){
-        sims[which(is.na(sims))[1]:(which(is.na(sims))[1] + Nsim * n[i] - 1)] <- rnorm(Nsim * n[i], x[i], x_sd[i]) # Add simulated values to vector
-    }
-
-    if(na.rm == TRUE){
-        if(length(which(is.na(sims))) > 0){
-            sims <- sims[-which(is.na(sims))] # Remove NA's from sims if called for
-        }
-    }
-
-    average <- mean(sims) # Calculate average
-    sd_p <- sd(sims) # Calculate standard deviation
-    N <- length(sims) / Nsim # Calculate effective sample size
-
-    resultvec <- c(average, sd_p, N)
-    names(resultvec) <- c("average", "sd", "N")
-
-    if(verbose == TRUE){
-        print(resultvec)
-    }
-    if(output == "SD"){
-        return(resultvec[2])
-    } else if(output == "average"){
+    }else if(output == "mean"){
         return(resultvec[1])
-    } else if(output == "All"){
+    }else if(output == "All"){
         return(resultvec)
-    } else if(output == "sims"){
-        return(sims)
-    } else{
+    }else{
         return("Error: output string not recognized")
     }
 }
