@@ -206,10 +206,33 @@ Anderson21 <- data.frame(Temp = 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2,
 MeinickeICDES <- data.frame(Temp = 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2,
     D47 = 0.0397 * 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2 + 0.1518) # Recalculated Meinicke calibration
 
-# Add theoretical calcite and aragonite calibration lines by Guo et al. 2009
+# Add theoretical calcite and aragonite calibration lines by Guo et al. 2009 recalculated to the I-CDES scale
 Guo09 <- data.frame(Temp = 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2,
-    D47_cc = -3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15) + 0.23252,
-    D47_ar = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893)
+    D47_cc_original = -3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15), # Original formula published by Guo et al., 2009
+    D47_ar_original = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15), # Original formula published by Guo et al., 2009
+    D47_cc_CDES25 = -3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15) + 0.23252 + 0.268 - 0.232, # Corrected to CDES reference fram by updating the D47-D63 fractionation factor from 0.232 to 0.268
+    D47_ar_CDES25 = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893 + 0.268 - 0.232, # Corrected to CDES reference fram by updating the D47-D63 fractionation factor from 0.232 to 0.268
+    D47_cc_CDES90 = -3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15) + 0.23252 + 0.268 - 0.232 - 0.088, # Bring to CDES90 by applying the 25-70 degrees acid fractionation factor by Petersen et al., 2019
+    D47_ar_CDES90 = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893 + 0.268 - 0.232 - 0.088, # Bring to CDES90 by applying the 25-70 degrees acid fractionation factor by Petersen et al., 2019
+    D47_cc_CDES90_corr = (-3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15) + 0.23252 + 0.268 - 0.232 - 0.088) * 1.035, # Correct for D47-dependent D47-D63 fractionation factor of 35 ppm/per mille found by Guo et al. 2009 (and implemented in Jautzy et al., 2020)
+    D47_ar_CDES90_corr = (-3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893 + 0.268 - 0.232 - 0.088) * 1.035 # Correct for D47-dependent D47-D63 fractionation factor of 35 ppm/per mille found by Guo et al. 2009 (and implemented in Jautzy et al., 2020)
+)
+
+# Values used to put Guo et al. 2009 data on the I-CDES scale
+# ETH-1 - Iso A (Meckler et al., 2014) = 600 degr with D47 of 0.2052
+# ETH-2 - Iso B (Meckler et al., 2014) = 600 degr with D47 of 0.2085
+# ETH-3 - Iso C (Meckler et al., 2014) = ~20 degr with D47 of 0.6132
+
+ETH1_GuoCDES <- Guo09$D47_ar_CDES25[which(Guo09$Temp == 10 ^ 6 / (600 + 273.15) ^ 2)]
+ETH3_GuoCDES <- Guo09$D47_ar_CDES25[which(Guo09$Temp == 10 ^ 6 / (20 + 273.15) ^ 2)]
+ETH1_ICDES <- 0.2052
+ETH3_ICDES <- 0.6132
+
+# Place on I-CDES scale
+Guo09$D47_cc_ICDES <- (Guo09$D47_cc_CDES25 - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES # Use linear correction through ETH1 and ETH3 values to transform to I-CDES scale
+Guo09$D47_ar_ICDES <- (Guo09$D47_ar_CDES25 - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES # Use linear correction through ETH1 and ETH3 values to transform to I-CDES scale
+Guo09$D47_cc <- Guo09$D47_cc_ICDES * 1.035 # Correct for D47-dependent D47-D63 fractionation factor of 35 ppm/per mille found by Guo et al. 2009 (and implemented in Jautzy et al., 2020)
+Guo09$D47_ar <- Guo09$D47_ar_ICDES * 1.035 # Correct for D47-dependent D47-D63 fractionation factor of 35 ppm/per mille found by Guo et al. 2009 (and implemented in Jautzy et al., 2020)
 
 # Arctica islandica plot (Figure 1)
 source("05_A_islandica_plot.r")
@@ -250,6 +273,8 @@ dat$D47res_lowT_York <- dat$D47 - predict(D47m_lowT_York, newdata = newdat_York,
 dat$D47res_poly <- dat$D47 - predict(D47m_poly_MC, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
 dat$D47res_Anderson <- dat$D47 - (0.0391 * 10 ^ 6 / (dat$Temp + 273.15) ^ 2 + 0.154)
 dat$D47res_Meinicke <- dat$D47 - (0.0397 * 10 ^ 6 / (dat$Temp + 273.15) ^ 2 + 0.1518)
+dat$D47res_Guo_cc <- dat$D47 - (((-3.33040 * 10 ^ 9 / (dat$Temp + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (dat$Temp + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (dat$Temp + 273.15) ^ 2 - 5.54042 / (dat$Temp + 273.15) + 0.23252 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
+dat$D47res_Guo_ar <- dat$D47 - (((-3.43068 * 10 ^ 9 / (dat$Temp + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (dat$Temp + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (dat$Temp + 273.15) ^ 2 - 6.90300 / (dat$Temp + 273.15) + 0.22893 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
 
 newdat_York <- data.frame(x = 10 ^6 / (D47stats$Temp + 273.15) ^ 2)
 D47stats$D47res_York <- D47stats$D47_mean - predict(D47m_York, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
@@ -257,6 +282,8 @@ D47stats$D47res_lowT_York <- D47stats$D47_mean - predict(D47m_lowT_York, newdata
 D47stats$D47res_poly <- D47stats$D47_mean - predict(D47m_poly_MC, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
 D47stats$D47res_Anderson <- D47stats$D47_mean - (0.0391 * 10 ^ 6 / (D47stats$Temp + 273.15) ^ 2 + 0.154)
 D47stats$D47res_Meinicke <- D47stats$D47_mean - (0.0397 * 10 ^ 6 / (D47stats$Temp + 273.15) ^ 2 + 0.1518)
+D47stats$D47res_Guo_cc <- D47stats$D47_mean - (((-3.33040 * 10 ^ 9 / (D47stats$Temp + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (D47stats$Temp + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (D47stats$Temp + 273.15) ^ 2 - 5.54042 / (D47stats$Temp + 273.15) + 0.23252 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
+D47stats$D47res_Guo_ar <- D47stats$D47_mean - (((-3.43068 * 10 ^ 9 / (D47stats$Temp + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (D47stats$Temp + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (D47stats$Temp + 273.15) ^ 2 - 6.90300 / (D47stats$Temp + 273.15) + 0.22893 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
 
 newdat_York <- data.frame(x = 10 ^6 / (Aisstats$Temp + 273.15) ^ 2)
 Aisstats$D47res_York <- Aisstats$D47_mean - predict(D47m_York, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
@@ -264,6 +291,8 @@ Aisstats$D47res_lowT_York <- Aisstats$D47_mean - predict(D47m_lowT_York, newdata
 Aisstats$D47res_poly <- Aisstats$D47_mean - predict(D47m_poly_MC, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
 Aisstats$D47res_Anderson <- Aisstats$D47_mean - (0.0391 * 10 ^ 6 / (Aisstats$Temp + 273.15) ^ 2 + 0.154)
 Aisstats$D47res_Meinicke <- Aisstats$D47_mean - (0.0397 * 10 ^ 6 / (Aisstats$Temp + 273.15) ^ 2 + 0.1518)
+Aisstats$D47res_Guo_cc <- Aisstats$D47_mean - (((-3.33040 * 10 ^ 9 / (Aisstats$Temp + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (Aisstats$Temp + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (Aisstats$Temp + 273.15) ^ 2 - 5.54042 / (Aisstats$Temp + 273.15) + 0.23252 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
+Aisstats$D47res_Guo_ar <- Aisstats$D47_mean - (((-3.43068 * 10 ^ 9 / (Aisstats$Temp + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (Aisstats$Temp + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (Aisstats$Temp + 273.15) ^ 2 - 6.90300 / (Aisstats$Temp + 273.15) + 0.22893 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
 
 newdat_York <- data.frame(x = 10 ^6 / (violin_data$Temp + 273.15) ^ 2)
 violin_data$D47res_York <- violin_data$D47 - predict(D47m_York, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
@@ -271,19 +300,30 @@ violin_data$D47res_lowT_York <- violin_data$D47 - predict(D47m_lowT_York, newdat
 violin_data$D47res_poly <- violin_data$D47 - predict(D47m_poly_MC, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
 violin_data$D47res_Anderson <- violin_data$D47 - (0.0391 * 10 ^ 6 / (violin_data$Temp + 273.15) ^ 2 + 0.154)
 violin_data$D47res_Meinicke <- violin_data$D47 - (0.0397 * 10 ^ 6 / (violin_data$Temp + 273.15) ^ 2 + 0.1518)
+violin_data$D47res_Guo_cc <- violin_data$D47 - (((-3.33040 * 10 ^ 9 / (violin_data$Temp + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (violin_data$Temp + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (violin_data$Temp + 273.15) ^ 2 - 5.54042 / (violin_data$Temp + 273.15) + 0.23252 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
+violin_data$D47res_Guo_ar <- violin_data$D47 - (((-3.43068 * 10 ^ 9 / (violin_data$Temp + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (violin_data$Temp + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (violin_data$Temp + 273.15) ^ 2 - 6.90300 / (violin_data$Temp + 273.15) + 0.22893 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
 
+# Calculate values for calibrations relative to regressions through our dataset
 D47m_York_result_res <- D47m_York_result - D47m_York_result$fit
 D47m_York_result_res$x <- D47m_York_result_res$x + D47m_York_result$fit
 D47m_York_result_res$Anderson <- Anderson21$D47 - D47m_York_result$fit
 D47m_York_result_res$Meinicke <- MeinickeICDES$D47 - D47m_York_result$fit
+D47m_York_result_res$Guo_cc <- Guo09$D47_cc - D47m_York_result$fit
+D47m_York_result_res$Guo_ar <- Guo09$D47_ar - D47m_York_result$fit
+
 D47m_lowT_York_result_res <- D47m_lowT_York_result - D47m_lowT_York_result$fit
 D47m_lowT_York_result_res$x <- D47m_lowT_York_result_res$x + D47m_lowT_York_result$fit
 D47m_lowT_York_result_res$Anderson <- Anderson21$D47[1:1001] - D47m_lowT_York_result$fit
 D47m_lowT_York_result_res$Meinicke <- MeinickeICDES$D47[1:1001] - D47m_lowT_York_result$fit
+D47m_lowT_York_result_res$Guo_cc <- Guo09$D47_cc[1:1001] - D47m_lowT_York_result$fit
+D47m_lowT_York_result_res$Guo_ar <- Guo09$D47_ar[1:1001] - D47m_lowT_York_result$fit
+
 D47m_poly_MC_result_res <- D47m_poly_MC_result - D47m_poly_MC_result$fit
 D47m_poly_MC_result_res$x <- D47m_poly_MC_result_res$x + D47m_poly_MC_result$fit
 D47m_poly_MC_result_res$Anderson <- Anderson21$D47 - D47m_poly_MC_result$fit
 D47m_poly_MC_result_res$Meinicke <- MeinickeICDES$D47 - D47m_poly_MC_result$fit
+D47m_poly_MC_result_res$Guo_cc <- Guo09$D47_cc - D47m_poly_MC_result$fit
+D47m_poly_MC_result_res$Guo_ar <- Guo09$D47_ar - D47m_poly_MC_result$fit
 
 # Export summary of regression residuals
 # write.csv(Aisstats, "<path>/Arctica_dataset_propagated_stats.csv")
@@ -293,9 +333,15 @@ D47m_poly_MC_result_res$Meinicke <- MeinickeICDES$D47 - D47m_poly_MC_result$fit
 source("07_Aragonite_residual_plot.r")
 
 # Prepare summary of calibration offsets
-calibration_offset <- data.frame(D47_offset = c(dat$D47res_Anderson[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))], dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))]),
-    D47_SD = rep(dat$D47_SD[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))], 2),
-    Calibration = c(rep("Anderson et al., 2021", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])), rep("Meinicke et al., 2020", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])))
+calibration_offset <- data.frame(D47_offset = c(dat$D47res_Anderson[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))],
+        dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))],
+        dat$D47res_Guo_cc[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))],
+        dat$D47res_Guo_ar[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))]),
+    D47_SD = rep(dat$D47_SD[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))], 4),
+    Calibration = c(rep("Anderson et al., 2021", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])),
+        rep("Meinicke et al., 2020", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])),
+        rep("Guo et al., 2009 (calcite)", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])),
+        rep("Guo et al., 2009 (aragonite)", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])))
 )
 
 # Calculate the temperature equivalent of the calibration offset
