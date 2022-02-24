@@ -16,21 +16,22 @@ uniquesamples <- data.frame(samplename = unique(violin_data$sample),
 fillscale <- colorscale[match(uniquesamples$Analysis, names(colorscale))]
 names(fillscale) <- uniquesamples$samplename
 
+
 Aragonite_D47_plot <- ggplot(data = dat, aes(10^6 / (Temp + 273.15) ^ 2 , D47)) +
 # Regressions
-    geom_ribbon(data = D47m_poly_MC_result,
-        aes(x = x,
-        y = fit,
-        ymin = lwr,
-        ymax = upr),
-        fill = "lightblue",
-        alpha = 0.3) +
-    geom_line(data = D47m_poly_MC_result,
-        aes(x = x, y = fit),
-        color = "lightblue",
-        linetype = "dashed",
-        cex = 1,
-        alpha = 1) +
+#    geom_ribbon(data = D47m_poly_MC_result,
+#        aes(x = x,
+#        y = fit,
+#        ymin = lwr,
+#        ymax = upr),
+#        fill = "lightblue",
+#        alpha = 0.3) +
+#    geom_line(data = D47m_poly_MC_result,
+#        aes(x = x, y = fit),
+#        color = "lightblue",
+#        linetype = "dashed",
+#        cex = 1,
+#        alpha = 1) +
     geom_ribbon(data = D47m_York_result,
         aes(x = x,
         y = fit,
@@ -69,18 +70,17 @@ Aragonite_D47_plot <- ggplot(data = dat, aes(10^6 / (Temp + 273.15) ^ 2 , D47)) 
         linetype = "dotted",
         cex = 1,
         alpha = 1) +
-#    geom_line(data = Guo09,
-#        aes(x = Temp, y = D47_cc),
-#        color = "blue",
-#        linetype = "dashed",
-#        cex = 1,
-#        alpha = 0.5) +
-#    geom_line(data = Guo09,
-#        aes(x = Temp, y = D47_ar),
-#        color = "darkgreen",
-#        linetype = "dashed",
-#        cex = 1,
-#        alpha = 0.5) +
+    geom_line(data = Guo09,
+        aes(x = Temp, y = D47_cc),
+        color = "grey",
+        cex = 1,
+        alpha = 1) +
+    geom_line(data = Guo09,
+        aes(x = Temp, y = D47_ar),
+        color = "grey",  
+        linetype = "dashed",
+        cex = 1,
+        alpha = 1) +
 # Violin plots
     geom_violin(data = violin_data[which(!violin_data$outlier), ],
         aes(10^6 / (Temp + 273.15) ^ 2,
@@ -131,7 +131,6 @@ Aragonite_D47_plot <- ggplot(data = dat, aes(10^6 / (Temp + 273.15) ^ 2 , D47)) 
         cex = 1,
         alpha = 1) +
 # Plot layout
-    ylim(0, max(D47stats$D47_mean + D47stats$CL95)) +
     scale_x_continuous(10 ^ 6 / T ^ 2 ~ "(K)",
         breaks = seq(0, 13.5, 1),
         minor_breaks = seq(0, 13.5, 0.25),
@@ -140,6 +139,7 @@ Aragonite_D47_plot <- ggplot(data = dat, aes(10^6 / (Temp + 273.15) ^ 2 , D47)) 
             breaks = temp_breaks,
             labels = temp_labs)) +
     ggtitle(expression("Arctica islandica "~Delta[47]~" vs Temperature")) +
+    coord_cartesian(ylim = c(0, max(D47stats$D47_mean + D47stats$CL95))) +
     labs(x = 10 ^ 6 / T ^ 2 ~ "(K)",
         y = Delta * Delta[47] ~ "(\u2030"~"I-CDES)",
         colour = "Legend") +
@@ -148,10 +148,9 @@ Aragonite_D47_plot <- ggplot(data = dat, aes(10^6 / (Temp + 273.15) ^ 2 , D47)) 
     scale_shape_manual(values = c(15:20)) +
     theme_bw()
 
-
 # Add zoom in for low temperatures----------------------------------------------
 Aragonite_D47_plot_lowT <- Aragonite_D47_plot +
-    ylim(0.3, 0.8) +
+    coord_cartesian(ylim = c(0.3, 0.8)) +
     scale_x_continuous(10 ^ 6 / T ^ 2 ~ "(K)",
         breaks = seq(0, 13.5, 0.5),
         minor_breaks = seq(0, 13.5, 0.25),
