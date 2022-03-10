@@ -138,7 +138,7 @@ Aragonite_D47_plot <- ggplot(data = dat, aes(10^6 / (Temp + 273.15) ^ 2 , D47)) 
             "Temperature (°C)",
             breaks = temp_breaks,
             labels = temp_labs)) +
-    ggtitle(expression("Arctica islandica "~Delta[47]~" vs Temperature")) +
+    ggtitle(expression("Aragonite "~Delta[47]~" vs Temperature")) +
     coord_cartesian(ylim = c(0, max(D47stats$D47_mean + D47stats$CL95))) +
     labs(x = 10 ^ 6 / T ^ 2 ~ "(K)",
         y = Delta * Delta[47] ~ "(\u2030"~"I-CDES)",
@@ -159,7 +159,7 @@ Aragonite_D47_plot_lowT <- Aragonite_D47_plot +
             breaks = temp_breaks,
             labels = temp_labs_lowT),
         limits = c(7, 13.5)) +
-    ggtitle(expression("Arctica islandica "~Delta[47]~" vs Temperature")) +
+    ggtitle(expression("Aragonite "~Delta[47]~" vs Temperature")) +
     theme(legend.position = "none")
 
 combined_plots_Aragonite <- grid.arrange(Aragonite_D47_plot + theme(legend.position = "none"),
