@@ -107,15 +107,16 @@ Ais_plot <- ggplot(data = dat, aes(10^6 / (Temp + 273.15) ^ 2 , D47)) +
         cex = 1,
         alpha = 1) +
 # Plot layout
-    ylim(0.55, max(Aisstats$D47_mean + Aisstats$CL95)) +
     scale_x_continuous(10^6/T^2~"(K)",
-        limits = c(11.5, 13.5),
         breaks = seq(11, 14, 0.5),
         minor_breaks = seq(11, 14, 0.25),
         sec.axis = sec_axis(~ sqrt(1e6 / .) - 273.15,
             "Temperature (°C)",
             breaks = temp_breaks,
             labels = temp_labs_lowT)) +
+    coord_cartesian(xlim = c(11.5, 13.5),
+        ylim = c(0.6, 0.72)
+    ) +
     ggtitle(expression("Arctica islandica "~Delta[47]~" vs Temperature")) +
     labs(x = 10^6/T^2~"(K)",
         y = Delta*Delta[47]~"(\u2030"~"I-CDES)",

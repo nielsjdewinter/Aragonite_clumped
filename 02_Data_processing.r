@@ -9,49 +9,106 @@ dat$sample <- paste(dat$Temp, dat$Analysis, sep = "_")
 
 source("03_Average_error_propagation.r")
 
+
 # ------------------------Summarize stats per data ID---------------------------
-D47stats <- dat[-which(dat$D47_outlier == TRUE),] %>% # Summarize D47 statistics
+
+# First propagate uncertainties on bins per temperature, keeping data from different machines separate
+D47stats_Machinebin <- dat[which(dat$D47_outlier != TRUE),] %>% # Summarize D47 statistics
+    group_by(ID, Machine) %>%
+    summarize(
+        Temp = mean(Temp, na.rm = TRUE),
+        Temp_SD = first(Temp_SD),
+        Analysis = first(Analysis),
+        type = first(type),
+        sample = first(sample),
+        D47_binmean = mean(D47, na.rm = TRUE),  # Calculate means per sample
+        SD_bin = sd(D47, na.rm = TRUE), # Calculate stdevs per sample bin
+        SD_ext = first(D47_SD), # External standard deviation (reported or based on check STD)
+        binsd = if(is.na(SD_bin)){first(SD_ext)}else{max(SD_bin, SD_ext)}, # Find largest standard deviation
+        Nbin = n(), # Calculate the number of modelled values, excluding NA's
+        binse = binsd / sqrt(Nbin), # Calculate the standard error
+        binCL95 = qt(0.95, Nbin) * binse, # Calculate the 95% confidence level
+        param49_binmean = mean(param49, na.rm = TRUE), # Propagate param49 mean per sample
+        param49_binsd = sd(param49, na.rm = TRUE), # Propagate param49 SD per sample
+        Machine = first(Machine)
+    ) %>%
+    ungroup()
+
+# write.csv(D47stats_Machinebin, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Aragonite_dataset_stats_by_Machine.csv")
+
+# Now combine sample groups from different machines into one bin
+D47stats <- D47stats_Machinebin %>%
     group_by(ID) %>%
     summarize(
-        Temp = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "average"),
-        Temp_SD = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "SD"),
+        Temp = mean(Temp, na.rm = TRUE),
+        Temp_SD = first(Temp_SD),
         Analysis = first(Analysis),
         type = first(type),
         sample = first(sample),
-        D47_mean = propagate_MC(x = D47, x_sd = D47_SD, na.rm = TRUE, output = "average"),  # Calculate means per sample
-        sd = propagate_MC(x = D47, x_sd = D47_SD, na.rm = TRUE, output = "SD"),  # Calculate stdevs per sample
-        N = n(), # Calculate the number of modelled values, excluding NA's
+        D47_mean = binmeans(x = D47_binmean, x_sd = binsd, n = Nbin, output = "mean"),  # Calculate means per sample
+        sd = binmeans(x = D47_binmean, x_sd = binsd, n = Nbin, output = "SD"), # Calculate stdevs per sample bin
+        N = sum(Nbin, na.rm = TRUE), # Calculate the number of modelled values, excluding NA's
         se = sd / sqrt(N), # Calculate the standard error
         CL95 = qt(0.95, N) * se, # Calculate the 95% confidence level
-        param49_mean = propagate_MC(x = param49, x_sd = param49_sd, na.rm = TRUE, output = "average"), # Propagate param49 mean per sample
-        param49_sd = propagate_MC(x = param49, x_sd = param49_sd, na.rm = TRUE, output = "SD"), # Propagate param49 SD per sample
+        param49_mean = binmeans(x = param49_binmean, x_sd = param49_binsd, n = Nbin, output = "mean"),  # Calculate means per sample
+        param49_sd = binmeans(x = param49_binmean, x_sd = param49_binsd, n = Nbin, output = "SD"), # Calculate stdevs per sample bin
         param49_se = param49_sd / sqrt(N),
         param49_CL95 = qt(0.95, N) * param49_se
-    ) %>%
-    ungroup()
+    )
+
+# write.csv(D47stats, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Aragonite_dataset_stats_grouped.csv")
 
 # Summarize stats for Arctica islandica samples per specimen
-Aisstats <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] %>% # Summarize D47 statistics
-    group_by(Specimen) %>%
-    summarize(
+# First propagate uncertainties on bins per specimen, keeping data from different machines separate
+Aisstats_Machinebin <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] %>% # Summarize D47 statistics
+    group_by(Specimen, Machine) %>%
+    summarize(        
         sample = first(sample),
-        Temp = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "average"),
-        Temp_SD = propagate_MC(x = Temp, x_sd = Temp_SD, na.rm = TRUE, output = "SD"),
+        Temp = mean(Temp, na.rm = TRUE),
+        Temp_SD = first(Temp_SD),
         Analysis = first(Analysis),
         type = first(type),
-        D47_mean = propagate_MC(x = D47, x_sd = D47_SD, na.rm = TRUE, output = "average"),  # Calculate means per sample
-        sd = propagate_MC(x = D47, x_sd = D47_SD, na.rm = TRUE, output = "SD"),  # Calculate stdevs per sample
-        N = n(), # Calculate the number of modelled values, excluding NA's
-        se = sd / sqrt(N), # Calculate the standard error
-        CL95 = qt(0.95, N) * se, # Calculate the 95% confidence level
-        param49_mean = propagate_MC(x = param49, x_sd = param49_sd, na.rm = TRUE, output = "average"), # Propagate param49 mean per sample
-        param49_sd = propagate_MC(x = param49, x_sd = param49_sd, na.rm = TRUE, output = "SD"), # Propagate param49 SD per sample
-        param49_se = param49_sd / sqrt(N),
-        param49_CL95 = qt(0.95, N) * param49_se
+        sample = first(sample),
+        D47_binmean = mean(D47, na.rm = TRUE),  # Calculate means per sample
+        SD_bin = sd(D47, na.rm = TRUE), # Calculate stdevs per sample bin
+        SD_ext = first(D47_SD), # External standard deviation (reported or based on check STD)
+        binsd = max(SD_bin, SD_ext), # Find largest standard
+        Nbin = n(), # Calculate the number of modelled values, excluding NA's
+        binse = binsd / sqrt(Nbin), # Calculate the standard error
+        binCL95 = qt(0.95, Nbin) * binse, # Calculate the 95% confidence level
+        param49_binmean = mean(param49, na.rm = TRUE), # Propagate param49 mean per sample
+        param49_binsd = sd(param49, na.rm = TRUE), # Propagate param49 SD per sample
+        Machine = first(Machine)
     ) %>%
     ungroup()
 
-write.csv(D47stats_old, "out/Aragonite_dataset_naive_stats.csv")
+# write.csv(Aisstats_Machinebin, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_dataset_stats_by_Machine.csv")
+
+# Now combine sample groups from different machines into one bin
+Aisstats <- Aisstats_Machinebin %>%
+    group_by(Specimen) %>%
+    summarize(
+        Temp = mean(Temp, na.rm = TRUE),
+        Temp_SD = first(Temp_SD),
+        Analysis = first(Analysis),
+        type = first(type),
+        sample = first(sample),
+        D47_mean = binmeans(x = D47_binmean, x_sd = binsd, n = Nbin, output = "mean"),  # Calculate means per sample
+        sd = binmeans(x = D47_binmean, x_sd = binsd, n = Nbin, output = "SD"), # Calculate stdevs per sample bin
+        N = sum(Nbin, na.rm = TRUE), # Calculate the number of modelled values, excluding NA's
+        se = sd / sqrt(N), # Calculate the standard error
+        CL95 = qt(0.95, N) * se, # Calculate the 95% confidence level
+        param49_mean = binmeans(x = param49_binmean, x_sd = param49_binsd, n = Nbin, output = "mean"),  # Calculate means per sample
+        param49_sd = binmeans(x = param49_binmean, x_sd = param49_binsd, n = Nbin, output = "SD"), # Calculate stdevs per sample bin
+        param49_se = param49_sd / sqrt(N),
+        param49_CL95 = qt(0.95, N) * param49_se
+    )
+
+# write.csv(Aisstats, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Ais_dataset_stats_grouped.csv")
+
+# Update dat with new propagated SDs for regressions
+newSDs <- D47stats[which(D47stats$Analysis == "this study"), which(colnames(D47stats) %in% c("ID", "sd"))]
+dat$D47_SD[which(!is.na(match(dat$ID, newSDs$ID)))] <- newSDs$sd[match(dat$ID, newSDs$ID)[which(!is.na(match(dat$ID, newSDs$ID)))]]
 
 # Monte Carlo sample from individual aliquot distributions for violin plots and polynomial regression including errors on D47
 Nsim <- 10 ^ 4
@@ -73,19 +130,20 @@ violin_data$x <- 10 ^ 6 / (violin_data$Temp_sampled + 273.15) ^ 2 # Create 10^6/
 
 Aisdata <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] # Isolate Arctica islandica data from this study
 Ais_temp_aov <- aov(D47 ~ ID, data = Aisdata) # Conduct one-way ANOVA on temperature bins
-capture.output(summary(Ais_temp_aov), file = "out/Ais_Pairwise_comp_temp_summary.txt") # Print summary of ANOVA
+
+capture.output(summary(Ais_temp_aov), file = "out/is_Pairwise_comp_temp_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_temp_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on temperature bins
-write.csv(TukeyHSD(Ais_temp_aov)$ID, "out/Ais_Pairwise_comp_temp.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_temp_aov)$ID, "out/is_Pairwise_comp_temp.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 Ais_spec1_aov <- aov(D47 ~ Specimen, data = Aisdata[which(Aisdata$Temp == 1.1), ]) # Conduct one-way ANOVA on Specimen bins within the 1 degree temperature treatment
-capture.output(summary(Ais_spec1_aov), file = "out/Ais_Pairwise_comp_spec1_summary.txt") # Print summary of ANOVA
+capture.output(summary(Ais_spec1_aov), file = "out/is_Pairwise_comp_spec1_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_spec1_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on specimen bins
-write.csv(TukeyHSD(Ais_spec1_aov)$Specimen, "out/Ais_Pairwise_comp_spec1.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_spec1_aov)$Specimen, "out/is_Pairwise_comp_spec1.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 Ais_spec18_aov <- aov(D47 ~ Specimen, data = Aisdata[which(Aisdata$Temp == 18.0), ]) # Conduct one-way ANOVA on Specimen bins within the 18 degree temperature treatment
-capture.output(summary(Ais_spec18_aov), file = "out/Ais_Pairwise_comp_spec18_summary.txt") # Print summary of ANOVA
+capture.output(summary(Ais_spec18_aov), file = "out/is_Pairwise_comp_spec18_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_spec18_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on specimen bins
-write.csv(TukeyHSD(Ais_spec18_aov)$Specimen, "out/Ais_Pairwise_comp_spec18.csv") # Export summary of Tukey multiple pairwise-comparisons
+write.csv(TukeyHSD(Ais_spec18_aov)$Specimen, "out/is_Pairwise_comp_spec18.csv") # Export summary of Tukey multiple pairwise-comparisons
 
 # ----------------------------Regressions---------------------------------------
 
@@ -106,7 +164,7 @@ D47m_lowT_York <- bfsl(x = 10^6 / (dat$Temp[dat$D47_outlier == FALSE & dat$Analy
     r = 0)
 newdat_lowT_York <- data.frame(x = 10 ^6 / (seq(0, 100, 0.1) + 273.15) ^ 2)
 D47m_lowT_York_pred <- predict(D47m_lowT_York, newdata = newdat_lowT_York, se.fit = TRUE, interval = "confidence", level = 0.95)
-D47m_lowT_York_result <- cbind(newdat_lowT_York, D47m_lowT_pred$fit)
+D47m_lowT_York_result <- cbind(newdat_lowT_York, D47m_lowT_York_pred$fit)
 
 # Calculate linear York regression on A. islandica and all bivalve data
 Ais_York <- bfsl(x = 10^6 / (dat$Temp[dat$D47_outlier == FALSE & (dat$Analysis == "this study" | dat$ID == "A.islandica")] + 273.15) ^ 2,
@@ -126,6 +184,7 @@ Mollusk_York_pred <- predict(Mollusk_York, newdata = newdat_lowT_York, se.fit = 
 Mollusk_York_result <- cbind(newdat_lowT_York, Mollusk_York_pred$fit)
 
 # Third order polynomial regression following Müller et al., 2019 and Jautzy et al., 2020
+newdat <- data.frame(Temp = seq(0, 1000, 0.1))
 D47m_poly <- lm(D47 ~ poly(I(10^6 / (Temp + 273.15) ^ 2), 3), data = dat, subset = which(dat$D47_outlier == FALSE))
 D47m_poly_pred <- predict.lm(D47m_poly, newdata = reaname(newdat_York, Temp = x), se.fit = TRUE, interval = "confidence", level = 0.95)
 D47m_poly_result <- cbind(10^6 / (newdat + 273.15) ^2, D47m_poly_pred$fit)
@@ -148,25 +207,47 @@ Anderson21 <- data.frame(Temp = 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2,
 MeinickeICDES <- data.frame(Temp = 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2,
     D47 = 0.0397 * 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2 + 0.1518) # Recalculated Meinicke calibration
 
-# Add theoretical calcite and aragonite calibration lines by Guo et al. 2009
+# Add theoretical calcite and aragonite calibration lines by Guo et al. 2009 recalculated to the I-CDES scale
 Guo09 <- data.frame(Temp = 10 ^ 6 / (seq(0, 1000, 0.1) + 273.15) ^ 2,
-    D47_cc = -3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15) + 0.23252,
-    D47_ar = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893)
+    D47_cc_original = -3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15), # Original formula published by Guo et al., 2009
+    D47_ar_original = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15), # Original formula published by Guo et al., 2009
+    D47_cc_CDES25 = -3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15) + 0.23252 + 0.268 - 0.232, # Corrected to CDES reference fram by updating the D47-D63 fractionation factor from 0.232 to 0.268
+    D47_ar_CDES25 = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893 + 0.268 - 0.232, # Corrected to CDES reference fram by updating the D47-D63 fractionation factor from 0.232 to 0.268
+    D47_cc_CDES90 = -3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15) + 0.23252 + 0.268 - 0.232 - 0.088, # Bring to CDES90 by applying the 25-70 degrees acid fractionation factor by Petersen et al., 2019
+    D47_ar_CDES90 = -3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893 + 0.268 - 0.232 - 0.088, # Bring to CDES90 by applying the 25-70 degrees acid fractionation factor by Petersen et al., 2019
+    D47_cc_CDES90_corr = (-3.33040 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 5.54042 / (seq(0, 1000, 0.1) + 273.15) + 0.23252 + 0.268 - 0.232 - 0.088) * 1.035, # Correct for D47-dependent D47-D63 fractionation factor of 35 ppm/per mille found by Guo et al. 2009 (and implemented in Jautzy et al., 2020)
+    D47_ar_CDES90_corr = (-3.43068 * 10 ^ 9 / (seq(0, 1000, 0.1) + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (seq(0, 1000, 0.1) + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (seq(0, 1000, 0.1) + 273.15) ^ 2 - 6.90300 / (seq(0, 1000, 0.1) + 273.15) + 0.22893 + 0.268 - 0.232 - 0.088) * 1.035 # Correct for D47-dependent D47-D63 fractionation factor of 35 ppm/per mille found by Guo et al. 2009 (and implemented in Jautzy et al., 2020)
+)
+
+# Values used to put Guo et al. 2009 data on the I-CDES scale
+# ETH-1 - Iso A (Meckler et al., 2014) = 600 degr with D47 of 0.2052
+# ETH-2 - Iso B (Meckler et al., 2014) = 600 degr with D47 of 0.2085
+# ETH-3 - Iso C (Meckler et al., 2014) = ~20 degr with D47 of 0.6132
+
+ETH1_GuoCDES <- Guo09$D47_ar_CDES25[which(Guo09$Temp == 10 ^ 6 / (600 + 273.15) ^ 2)]
+ETH3_GuoCDES <- Guo09$D47_ar_CDES25[which(Guo09$Temp == 10 ^ 6 / (20 + 273.15) ^ 2)]
+ETH1_ICDES <- 0.2052
+ETH3_ICDES <- 0.6132
+
+# Place on I-CDES scale
+Guo09$D47_cc_ICDES <- (Guo09$D47_cc_CDES25 - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES # Use linear correction through ETH1 and ETH3 values to transform to I-CDES scale
+Guo09$D47_ar_ICDES <- (Guo09$D47_ar_CDES25 - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES # Use linear correction through ETH1 and ETH3 values to transform to I-CDES scale
+Guo09$D47_cc <- Guo09$D47_cc_ICDES * 1.035 # Correct for D47-dependent D47-D63 fractionation factor of 35 ppm/per mille found by Guo et al. 2009 (and implemented in Jautzy et al., 2020)
+Guo09$D47_ar <- Guo09$D47_ar_ICDES * 1.035 # Correct for D47-dependent D47-D63 fractionation factor of 35 ppm/per mille found by Guo et al. 2009 (and implemented in Jautzy et al., 2020)
 
 # Arctica islandica plot (Figure 1)
-# See A_islandica_plot.r
+source("05_A_islandica_plot.r")
 
 # Full aragonite dataset plot (Figure 2)
-# See Full_aragonite_plot.r
-
+source("06_Full_aragonite_plot.r")
 
 # Summarize regression stats
-regstats <- data.frame(regression = c("All data lm", "low T lm", "All data York", "low T York", "A. islandica York", "Mollusk York"),
-    slope = c(D47m$coefficients[[2]], D47m_lowT$coefficients[[2]], D47m_York$coefficients[[2]], D47m_lowT_York$coefficients[[2]], Ais_York$coefficients[[2]], Mollusk_York$coefficients[[2]]),
-    slope_SE = c(summary(D47m)$coeff[[4]], summary(D47m_lowT)$coeff[[4]], D47m_York$coefficients[[4]], D47m_lowT_York$coefficients[[4]], Ais_York$coefficients[[4]], Mollusk_York$coefficients[[4]]),
-    intercept = c(D47m$coefficients[[1]], D47m_lowT$coefficients[[1]], D47m_York$coefficients[[1]], D47m_lowT_York$coefficients[[1]], Ais_York$coefficients[[1]], Mollusk_York$coefficients[[1]]),
-    intercept_SE = c(summary(D47m)$coeff[[3]], summary(D47m_lowT)$coeff[[3]], D47m_York$coefficients[[3]], D47m_lowT_York$coefficients[[3]], Ais_York$coefficients[[3]], Mollusk_York$coefficients[[3]]),
-    SER = c(sigma(D47m), sigma(D47m_lowT), sqrt(sum(D47m_York$residuals ^ 2) / D47m_York$df.residual), sqrt(sum(D47m_lowT_York$residuals ^ 2) / D47m_lowT_York$df.residual), sqrt(sum(Ais_York$residuals ^ 2) / Ais_York$df.residual), sqrt(sum(Mollusk_York$residuals ^ 2) / Mollusk_York$df.residual))
+regstats <- data.frame(regression = c("All data York", "low T York", "A. islandica York", "Mollusk York"),
+    slope = c(D47m_York$coefficients[[2]], D47m_lowT_York$coefficients[[2]], Ais_York$coefficients[[2]], Mollusk_York$coefficients[[2]]),
+    slope_SE = c(D47m_York$coefficients[[4]], D47m_lowT_York$coefficients[[4]], Ais_York$coefficients[[4]], Mollusk_York$coefficients[[4]]),
+    intercept = c(D47m_York$coefficients[[1]], D47m_lowT_York$coefficients[[1]], Ais_York$coefficients[[1]], Mollusk_York$coefficients[[1]]),
+    intercept_SE = c(D47m_York$coefficients[[3]], D47m_lowT_York$coefficients[[3]], Ais_York$coefficients[[3]], Mollusk_York$coefficients[[3]]),
+    SER = c(sqrt(sum(D47m_York$residuals ^ 2) / D47m_York$df.residual), sqrt(sum(D47m_lowT_York$residuals ^ 2) / D47m_lowT_York$df.residual), sqrt(sum(Ais_York$residuals ^ 2) / Ais_York$df.residual), sqrt(sum(Mollusk_York$residuals ^ 2) / Mollusk_York$df.residual))
 )
 
 regstats_poly <- data.frame(regression = c("Polynomial fit_means", "Polynomial fit_MC"),
@@ -193,6 +274,8 @@ dat$D47res_lowT_York <- dat$D47 - predict(D47m_lowT_York, newdata = newdat_York,
 dat$D47res_poly <- dat$D47 - predict(D47m_poly_MC, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
 dat$D47res_Anderson <- dat$D47 - (0.0391 * 10 ^ 6 / (dat$Temp + 273.15) ^ 2 + 0.154)
 dat$D47res_Meinicke <- dat$D47 - (0.0397 * 10 ^ 6 / (dat$Temp + 273.15) ^ 2 + 0.1518)
+dat$D47res_Guo_cc <- dat$D47 - (((-3.33040 * 10 ^ 9 / (dat$Temp + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (dat$Temp + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (dat$Temp + 273.15) ^ 2 - 5.54042 / (dat$Temp + 273.15) + 0.23252 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
+dat$D47res_Guo_ar <- dat$D47 - (((-3.43068 * 10 ^ 9 / (dat$Temp + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (dat$Temp + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (dat$Temp + 273.15) ^ 2 - 6.90300 / (dat$Temp + 273.15) + 0.22893 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
 
 newdat_York <- data.frame(x = 10 ^6 / (D47stats$Temp + 273.15) ^ 2)
 D47stats$D47res_York <- D47stats$D47_mean - predict(D47m_York, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
@@ -200,6 +283,8 @@ D47stats$D47res_lowT_York <- D47stats$D47_mean - predict(D47m_lowT_York, newdata
 D47stats$D47res_poly <- D47stats$D47_mean - predict(D47m_poly_MC, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
 D47stats$D47res_Anderson <- D47stats$D47_mean - (0.0391 * 10 ^ 6 / (D47stats$Temp + 273.15) ^ 2 + 0.154)
 D47stats$D47res_Meinicke <- D47stats$D47_mean - (0.0397 * 10 ^ 6 / (D47stats$Temp + 273.15) ^ 2 + 0.1518)
+D47stats$D47res_Guo_cc <- D47stats$D47_mean - (((-3.33040 * 10 ^ 9 / (D47stats$Temp + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (D47stats$Temp + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (D47stats$Temp + 273.15) ^ 2 - 5.54042 / (D47stats$Temp + 273.15) + 0.23252 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
+D47stats$D47res_Guo_ar <- D47stats$D47_mean - (((-3.43068 * 10 ^ 9 / (D47stats$Temp + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (D47stats$Temp + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (D47stats$Temp + 273.15) ^ 2 - 6.90300 / (D47stats$Temp + 273.15) + 0.22893 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
 
 newdat_York <- data.frame(x = 10 ^6 / (Aisstats$Temp + 273.15) ^ 2)
 Aisstats$D47res_York <- Aisstats$D47_mean - predict(D47m_York, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
@@ -207,6 +292,8 @@ Aisstats$D47res_lowT_York <- Aisstats$D47_mean - predict(D47m_lowT_York, newdata
 Aisstats$D47res_poly <- Aisstats$D47_mean - predict(D47m_poly_MC, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
 Aisstats$D47res_Anderson <- Aisstats$D47_mean - (0.0391 * 10 ^ 6 / (Aisstats$Temp + 273.15) ^ 2 + 0.154)
 Aisstats$D47res_Meinicke <- Aisstats$D47_mean - (0.0397 * 10 ^ 6 / (Aisstats$Temp + 273.15) ^ 2 + 0.1518)
+Aisstats$D47res_Guo_cc <- Aisstats$D47_mean - (((-3.33040 * 10 ^ 9 / (Aisstats$Temp + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (Aisstats$Temp + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (Aisstats$Temp + 273.15) ^ 2 - 5.54042 / (Aisstats$Temp + 273.15) + 0.23252 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
+Aisstats$D47res_Guo_ar <- Aisstats$D47_mean - (((-3.43068 * 10 ^ 9 / (Aisstats$Temp + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (Aisstats$Temp + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (Aisstats$Temp + 273.15) ^ 2 - 6.90300 / (Aisstats$Temp + 273.15) + 0.22893 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
 
 newdat_York <- data.frame(x = 10 ^6 / (violin_data$Temp + 273.15) ^ 2)
 violin_data$D47res_York <- violin_data$D47 - predict(D47m_York, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
@@ -214,31 +301,48 @@ violin_data$D47res_lowT_York <- violin_data$D47 - predict(D47m_lowT_York, newdat
 violin_data$D47res_poly <- violin_data$D47 - predict(D47m_poly_MC, newdata = newdat_York, se.fit = TRUE, interval = "none", level = 0.95)$fit
 violin_data$D47res_Anderson <- violin_data$D47 - (0.0391 * 10 ^ 6 / (violin_data$Temp + 273.15) ^ 2 + 0.154)
 violin_data$D47res_Meinicke <- violin_data$D47 - (0.0397 * 10 ^ 6 / (violin_data$Temp + 273.15) ^ 2 + 0.1518)
+violin_data$D47res_Guo_cc <- violin_data$D47 - (((-3.33040 * 10 ^ 9 / (violin_data$Temp + 273.15) ^ 4 + 2.32415 * 10 ^ 7 / (violin_data$Temp + 273.15) ^ 3 - 2.91282 * 10 ^ 3 / (violin_data$Temp + 273.15) ^ 2 - 5.54042 / (violin_data$Temp + 273.15) + 0.23252 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
+violin_data$D47res_Guo_ar <- violin_data$D47 - (((-3.43068 * 10 ^ 9 / (violin_data$Temp + 273.15) ^ 4 + 2.35766 * 10 ^ 7 / (violin_data$Temp + 273.15) ^ 3 - 8.06003 * 10 ^ 2 / (violin_data$Temp + 273.15) ^ 2 - 6.90300 / (violin_data$Temp + 273.15) + 0.22893 + 0.268 - 0.232) - ETH1_GuoCDES) * (ETH1_ICDES-ETH3_ICDES)/(ETH1_GuoCDES-ETH3_GuoCDES) + ETH1_ICDES) * 1.035
 
+# Calculate values for calibrations relative to regressions through our dataset
 D47m_York_result_res <- D47m_York_result - D47m_York_result$fit
 D47m_York_result_res$x <- D47m_York_result_res$x + D47m_York_result$fit
 D47m_York_result_res$Anderson <- Anderson21$D47 - D47m_York_result$fit
 D47m_York_result_res$Meinicke <- MeinickeICDES$D47 - D47m_York_result$fit
+D47m_York_result_res$Guo_cc <- Guo09$D47_cc - D47m_York_result$fit
+D47m_York_result_res$Guo_ar <- Guo09$D47_ar - D47m_York_result$fit
+
 D47m_lowT_York_result_res <- D47m_lowT_York_result - D47m_lowT_York_result$fit
 D47m_lowT_York_result_res$x <- D47m_lowT_York_result_res$x + D47m_lowT_York_result$fit
 D47m_lowT_York_result_res$Anderson <- Anderson21$D47[1:1001] - D47m_lowT_York_result$fit
 D47m_lowT_York_result_res$Meinicke <- MeinickeICDES$D47[1:1001] - D47m_lowT_York_result$fit
+D47m_lowT_York_result_res$Guo_cc <- Guo09$D47_cc[1:1001] - D47m_lowT_York_result$fit
+D47m_lowT_York_result_res$Guo_ar <- Guo09$D47_ar[1:1001] - D47m_lowT_York_result$fit
+
 D47m_poly_MC_result_res <- D47m_poly_MC_result - D47m_poly_MC_result$fit
 D47m_poly_MC_result_res$x <- D47m_poly_MC_result_res$x + D47m_poly_MC_result$fit
 D47m_poly_MC_result_res$Anderson <- Anderson21$D47 - D47m_poly_MC_result$fit
 D47m_poly_MC_result_res$Meinicke <- MeinickeICDES$D47 - D47m_poly_MC_result$fit
+D47m_poly_MC_result_res$Guo_cc <- Guo09$D47_cc - D47m_poly_MC_result$fit
+D47m_poly_MC_result_res$Guo_ar <- Guo09$D47_ar - D47m_poly_MC_result$fit
 
 # Export summary of regression residuals
 # write.csv(Aisstats, "<path>/Arctica_dataset_propagated_stats.csv")
 # write.csv(D47stats, "<path>/Aragonite_dataset_propagated_stats.csv")
 
 # Plot of residuals with respect to regressions (Figure 3)
-# See Aragonite_residual_plot.r
+source("07_Aragonite_residual_plot.r")
 
 # Prepare summary of calibration offsets
-calibration_offset <- data.frame(D47_offset = c(dat$D47res_Anderson[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))], dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))]),
-    D47_SD = rep(dat$D47_SD[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))], 2),
-    Calibration = c(rep("Anderson et al., 2021", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])), rep("Meinicke et al., 2020", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])))
+calibration_offset <- data.frame(D47_offset = c(dat$D47res_Anderson[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))],
+        dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))],
+        dat$D47res_Guo_cc[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))],
+        dat$D47res_Guo_ar[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))]),
+    D47_SD = rep(dat$D47_SD[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))], 4),
+    Calibration = c(rep("Anderson et al., 2021", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])),
+        rep("Meinicke et al., 2020", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])),
+        rep("Guo et al., 2009 (calcite)", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])),
+        rep("Guo et al., 2009 (aragonite)", length(dat$D47res_Meinicke[which(dat$type == "bivalve" & (dat$Analysis == "this study" | dat$Analysis == "Bernasconi18"))])))
 )
 
 # Calculate the temperature equivalent of the calibration offset
@@ -250,8 +354,8 @@ Calibration_offset_stats <- calibration_offset %>% # Summarize D47 offset statis
     group_by(Calibration) %>%
     summarize(
         N = n(), # Calculate the number of modelled values, excluding NA's
-        D47_offset_Average = propagate_MC(x = D47_offset, x_sd = D47_SD, na.rm = TRUE, output = "average"),
-        D47_offset_SD = propagate_MC(x = D47_offset, x_sd = D47_SD, na.rm = TRUE, output = "SD"),
+        D47_offset_Average = binmeans(x = D47_offset, x_sd = D47_SD, output = "mean"),
+        D47_offset_SD = binmeans(x = D47_offset, x_sd = D47_SD, output = "SD"),
         D47_offset_SE = D47_offset_SD / sqrt(N - 1), # Calculate the standard error
         D47_offset_CL95 = qt(0.95, N - 1) * D47_offset_SE # Calculate the 95% confidence level
     ) %>%
@@ -265,4 +369,4 @@ Calibration_offset_stats$Temp_offset_CL95 <- sqrt(0.0391 * 10 ^ 6 / (mean_D47 - 
 # write.csv(Calibration_offset_stats, "<path>/Calibration_offset_stats.csv")
 
 # Plot calibration offsets (Figure 4)
-# See Calibration_offset_plot.r
+source("08_Calibration_offset_plot.r")
