@@ -4,10 +4,11 @@ require(tidyverse) # for data treatment
 require(bfsl) # for York regressions
 
 # Load combined aragonite dataset
-dat <- as.data.frame(read.csv("<path>/01_Aragonite_compilation.csv", header = TRUE))
+dat <- as.data.frame(read.csv("01_Aragonite_compilation.csv", header = TRUE))
 dat$sample <- paste(dat$Temp, dat$Analysis, sep = "_")
 
-source("<path>/03_Average_error_propagation.r")
+source("03_Average_error_propagation.r")
+
 
 # ------------------------Summarize stats per data ID---------------------------
 
@@ -58,7 +59,6 @@ D47stats <- D47stats_Machinebin %>%
 # write.csv(D47stats, "E:/Dropbox//Research//postdoc//UNBIAS//Clumped Temperature Calibration/Aragonite_dataset_stats_grouped.csv")
 
 # Summarize stats for Arctica islandica samples per specimen
-
 # First propagate uncertainties on bins per specimen, keeping data from different machines separate
 Aisstats_Machinebin <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] %>% # Summarize D47 statistics
     group_by(Specimen, Machine) %>%
@@ -130,6 +130,7 @@ violin_data$x <- 10 ^ 6 / (violin_data$Temp_sampled + 273.15) ^ 2 # Create 10^6/
 
 Aisdata <- dat[which(dat$D47_outlier != TRUE & dat$Analysis == "this study"), ] # Isolate Arctica islandica data from this study
 Ais_temp_aov <- aov(D47 ~ ID, data = Aisdata) # Conduct one-way ANOVA on temperature bins
+
 capture.output(summary(Ais_temp_aov), file = "out/is_Pairwise_comp_temp_summary.txt") # Print summary of ANOVA
 TukeyHSD(Ais_temp_aov) # Print results of Tukey multiple pairwise-comparisons (post-hoc Tukey's test) on temperature bins
 write.csv(TukeyHSD(Ais_temp_aov)$ID, "out/is_Pairwise_comp_temp.csv") # Export summary of Tukey multiple pairwise-comparisons
@@ -185,7 +186,7 @@ Mollusk_York_result <- cbind(newdat_lowT_York, Mollusk_York_pred$fit)
 # Third order polynomial regression following Müller et al., 2019 and Jautzy et al., 2020
 newdat <- data.frame(Temp = seq(0, 1000, 0.1))
 D47m_poly <- lm(D47 ~ poly(I(10^6 / (Temp + 273.15) ^ 2), 3), data = dat, subset = which(dat$D47_outlier == FALSE))
-D47m_poly_pred <- predict.lm(D47m_poly, newdata = newdat, se.fit = TRUE, interval = "confidence", level = 0.95)
+D47m_poly_pred <- predict.lm(D47m_poly, newdata = reaname(newdat_York, Temp = x), se.fit = TRUE, interval = "confidence", level = 0.95)
 D47m_poly_result <- cbind(10^6 / (newdat + 273.15) ^2, D47m_poly_pred$fit)
 
 # Polynomial regression with errors on D47 and Temp using MC simulation
@@ -194,7 +195,7 @@ D47m_poly_MC_pred <- predict.lm(D47m_poly_MC, newdata = newdat_York, se.fit = TR
 D47m_poly_MC_result <- cbind(newdat_York, D47m_poly_MC_pred$fit)
 # Readjust 95% CL calculations for actual degrees of freedom
 D47m_poly_MC_result$lwr <- D47m_poly_MC_result$fit - (D47m_poly_MC_result$fit - D47m_poly_MC_result$lwr) * sqrt(D47m_poly_MC$df.residual) / sqrt(length(violin_data$D47) / Nsim - 4)
-D47m_poly_MC_result$upr <- D47m_poly_MC_result$fit + (D47m_poly_MC_result$upr - D47m_poly_MC_result$fit) * sqrt(D47m_poly_MC$df.residual) / sqrt(length(violin_data$D47) / Nsim - 4) 
+D47m_poly_MC_result$upr <- D47m_poly_MC_result$fit + (D47m_poly_MC_result$upr - D47m_poly_MC_result$fit) * sqrt(D47m_poly_MC$df.residual) / sqrt(length(violin_data$D47) / Nsim - 4)
 
 
 # -----------------------Add Preexisting calibrations---------------------------

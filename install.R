@@ -1,0 +1,7 @@
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("ggpubr")
+install.packages("gridExtra")
+install.packages("bfsl")
+install.packages("RColorBrewer")
+install.packages("ggrepel")
