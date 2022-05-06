@@ -1,3 +1,4 @@
+
 # Function to combine binned data based on the mean and standard deviation of the bins and their sample sizes.
 # Based on: "Combining Multiple binmeand Data Points And Their Errors" by Ken Tatebe (http://docplayer.net/33088897-Combining-multiple-binmeand-data-points-and-their-errors.html)
 # And: "Data Analyis Toolkit #12" by James Kirchner (http://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf)
