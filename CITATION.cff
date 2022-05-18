@@ -5,8 +5,8 @@ authors:
   given-names: "Niels Jonathan"  
   orcid: "https://orcid.org/0000-0002-1453-5407"
 title: "Aragonite_clumped"
-version: 0.0.1
-date-released: 2022-01-28
+version: 1.0.0
+date-released: 2022-05-18
 url: "https://github.com/nielsjdewinter/Aragonite_clumped"
 preferred-citation:
   type: article
